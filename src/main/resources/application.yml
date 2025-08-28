@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: SVC-SAPJCO-ALL
+  main:
+    allow-bean-definition-overriding: true
+
+# 로깅 설정
+logging:
+  level:
+    com.basis.template.svcsapjco: INFO
+    com.sap.conn.jco: INFO
+    org.springframework.web: INFO
+
+sap:
+  jco:
+    # SAP 시스템 연결 설정
+    ashost: ${SAP_ASHOST:192.168.230.239} #192.168.230.239, 192.168.110.203
+    sysnr: ${SAP_SYSNR:01} #00, 01
+    client: ${SAP_CLIENT:100} #400, 100
+    user: ${SAP_USER:HANRFC01}
+    passwd: ${SAP_PASSWD:Rfc01mm}
+    lang: ${SAP_LANG:KO}
+    
+    # 연결 풀 설정
+    pool:
+      capacity: ${SAP_POOL_CAPACITY:10}
+      peak-limit: ${SAP_POOL_PEAK_LIMIT:20}
+
+    # 타임아웃 설정
+    timeout:
+      connection: ${SAP_CONNECTION_TIMEOUT:60000}
+
+    # 트레이스 설정
+    trace:
+      enabled: ${SAP_TRACE_ENABLED:true}
