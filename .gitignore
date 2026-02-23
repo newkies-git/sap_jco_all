@@ -124,7 +124,7 @@ temp/
 *.so
 *.dylib
 *.jnilib
-# libs/ 폴더는 빌드에 필요하므로 예외
+# libs/ 폴더는 빌드에 필요하므로 예외 (Windows/Mac/Linux 라이브러리 포함)
 !libs/
 !libs/*.jar
 !libs/*.dylib
@@ -132,6 +132,7 @@ temp/
 !libs/*.dll
 !libs/*.jnilib
 !libs/*.mf
+!libs/*.zip
 
 # SAP 연결 설정 파일 (보안상 민감한 정보 포함)
 sapjco.properties
@@ -165,6 +166,7 @@ application-test.yml
 *.zip
 *.tar.gz
 *.rar
+!libs/*.zip
 
 # 문서 파일 (선택적)
 *.pdf
