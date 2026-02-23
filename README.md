@@ -6,6 +6,7 @@ SAP JCo를 사용하여 RFC/BAPI 함수를 호출하는 Spring Boot 기반 REST 
 
 - [주요 기능](#주요-기능)
 - [프로젝트 구조](#프로젝트-구조)
+- [기술 스택 및 적용된 개선 사항](#기술-스택-및-적용된-개선-사항)
 - [API 엔드포인트](#api-엔드포인트)
 - [설정](#설정)
 - [사용 예시](#사용-예시)
@@ -32,13 +33,17 @@ src/main/java/com/basis/template/svcsapjco/
 │   ├── SapJcoExecutionController.java  # 함수 실행 API
 │   └── SapJcoQueryController.java      # 함수 조회/검색 API
 ├── service/                       # 비즈니스 로직 서비스
-│   ├── SapJcoService.java              # 핵심 함수 실행 서비스
-│   ├── SapJcoFunctionDiscoveryService.java  # 함수 검색 서비스
-│   ├── SapJcoResponseBuilder.java      # 응답 생성 서비스
-│   ├── SapJcoValidationService.java    # 요청 검증 서비스
+│   ├── SapJcoService.java              # 함수 실행 오케스트레이션
+│   ├── SapJcoFunctionDiscoveryService.java  # 함수 검색/인터페이스 조회 오케스트레이션
+│   ├── SapJcoResponseBuilder.java      # 응답 DTO 조립
+│   ├── SapJcoValidationService.java    # 요청 검증
 │   ├── SapJcoFunctionExecutor.java     # 함수 실행기
 │   ├── SapJcoFunctionBuilder.java      # 함수 빌더
-│   └── SapJcoConnectionManager.java    # 연결 관리
+│   ├── SapJcoConnectionManager.java    # 연결 관리
+│   ├── RfcFunctionSearchExecutor.java  # RFC_FUNCTION_SEARCH 실행
+│   ├── RfcFunctionInterfaceExecutor.java # RFC_GET_FUNCTION_INTERFACE 실행
+│   ├── FunctionSearchResultMapper.java # 검색 결과 매핑
+│   └── ParamsTableMapper.java          # PARAMS 테이블 → 인터페이스 정보 매핑
 ├── dto/                           # 데이터 전송 객체
 │   ├── ApiResponse.java               # 공통 API 응답
 │   ├── SapFunctionRequest.java        # 함수 실행 요청
@@ -47,19 +52,40 @@ src/main/java/com/basis/template/svcsapjco/
 │   ├── SapParameterMap.java           # 파라미터 맵
 │   ├── SapTableData.java              # 테이블 데이터
 │   ├── FunctionInfo.java              # 함수 정보
-│   ├── FunctionInterfaceInfo.java     # 함수 인터페이스 정보
-│   └── ParameterInfo.java             # 파라미터 정보
+│   └── FunctionInterfaceInfo.java     # 함수 인터페이스 정보 (ParameterInfo 내부 클래스 포함)
 ├── config/                        # 설정 클래스
-│   ├── SapJcoConfig.java             # SAP JCo 설정
+│   ├── SapJcoConfig.java             # SAP JCo 설정 (test 프로필 제외)
+│   ├── SapDestinationDataProvider.java # Destination 프로퍼티 제공
 │   └── WebConfig.java                # 웹 설정
-├── util/                          # 유틸리티 클래스
+├── util/                          # 유틸리티
+│   ├── JCoResultExtractor.java       # JCo 결과(Export/Table) 추출
+│   ├── RequestContext.java           # 요청 컨텍스트 (requestId, startTime)
 │   ├── StructuredLogger.java         # 구조화된 로깅
-│   └── SapJcoDataUtil.java           # 데이터 변환 유틸리티
-├── exception/                     # 예외 처리
-├── interceptor/                   # 인터셉터
+│   ├── SapJcoDataUtil.java           # 데이터 변환
+│   └── SapPatternConverter.java      # 검색 패턴 → SAP 와일드카드 변환
+├── exception/                     # 예외 (SapJcoException 계층, GlobalExceptionHandler)
+├── interceptor/                   # 로깅 인터셉터
 ├── constant/                      # 상수 정의
 └── SvcSapjcoApplication.java      # 메인 애플리케이션
 ```
+
+## 🛠️ 기술 스택 및 적용된 개선 사항
+
+### 기술 스택
+
+- **Java 21**, Spring Boot 3.3.x, SAP JCo 3
+- 단일 책임 원칙(SRP)에 따른 역할 분리
+
+### 적용된 개선 사항
+
+- **결과 추출**: `JCoResultExtractor`로 Export/Table 추출 통합, 실패 시 예외 전파(`SapResultExtractionException`)
+- **파라미터 설정**: 설정 실패 시 `SapParameterException` 발생 (기존 로그만 하던 동작 제거)
+- **함수 검색/인터페이스**: `SapPatternConverter`, `RfcFunctionSearchExecutor`, `FunctionSearchResultMapper`, `RfcFunctionInterfaceExecutor`, `ParamsTableMapper`로 분리
+- **요청 컨텍스트**: `RequestContext`(ThreadLocal)와 `StructuredLogger` 분리
+- **설정**: `SapDestinationDataProvider` 별도 클래스로 분리, `SapJcoConfig`는 test 프로필에서 미로드
+- **병렬 처리**: `sap.jco.response.parallel-table-conversion`으로 테이블 변환 시 parallel stream 옵션 제공
+- **Virtual threads**: `spring.threads.virtual.enabled`로 가상 스레드 사용 가능 (SAP JCo 호환성 확인 후 활성화 권장)
+- **예외**: 함수 검색/인터페이스 조회 실패 메시지 구체화, `GlobalExceptionHandler`에서 `getErrorCode()` 활용
 
 ## 🔌 API 엔드포인트
 
@@ -169,6 +195,11 @@ GET /api/sap/functions/{functionName}/interface
 다음 환경 변수를 설정하거나 `application.yml`에서 직접 수정할 수 있습니다:
 
 ```yaml
+spring:
+  threads:
+    virtual:
+      enabled: ${SPRING_THREADS_VIRTUAL_ENABLED:false}  # Java 21 가상 스레드 (선택)
+
 sap:
   jco:
     # SAP 시스템 연결 설정
@@ -187,12 +218,14 @@ sap:
     # 타임아웃 설정
     timeout:
       connection: ${SAP_CONNECTION_TIMEOUT:60000}
-      receive: ${SAP_RECEIVE_TIMEOUT:30000}
       
     # 트레이스 설정
     trace:
       enabled: ${SAP_TRACE_ENABLED:true}
-      level: ${SAP_TRACE_LEVEL:1}
+    
+    # 응답 테이블 변환 시 병렬 처리 (대량 테이블 시 유리)
+    response:
+      parallel-table-conversion: ${SAP_PARALLEL_TABLE_CONVERSION:false}
 ```
 
 ### 필수 환경 변수
@@ -266,7 +299,7 @@ curl -X GET "http://localhost:8080/api/sap/execute/BAPI_USER_GET_DETAIL" | jq .
 
 ### 시스템 요구사항
 
-- Java 17 이상
+- Java 21 이상
 - Gradle 7.x 이상
 - SAP JCo 3 라이브러리
 
@@ -275,6 +308,9 @@ curl -X GET "http://localhost:8080/api/sap/execute/BAPI_USER_GET_DETAIL" | jq .
 ```bash
 # 프로젝트 빌드
 ./gradlew build
+
+# 단위 테스트 실행 (test 프로필 사용, SAP 연결 없이 컨텍스트 로드 검증)
+./gradlew test
 
 # 애플리케이션 실행
 ./gradlew bootRun
@@ -313,12 +349,12 @@ logging:
 
 ### 구조화된 로깅
 
-프로젝트는 `StructuredLogger`를 사용하여 구조화된 로깅을 제공합니다:
+`RequestContext`에 요청 ID·시작 시각을 두고, `StructuredLogger`에서 로그 메시지/필드를 구성합니다.
 
-- 함수 실행 로그
-- 함수 검색 로그
-- 함수 인터페이스 조회 로그
-- 에러 및 예외 로그
+- API 요청/응답 로그
+- 함수 실행 시작/완료/실패 로그
+- 함수 검색·인터페이스 조회 로그
+- 검증 실패·예외 로그
 
 ### 로그 확인
 
@@ -364,8 +400,8 @@ tail -f logs/application.log
 # SAP JCo 트레이스 확인
 tail -f logs/sapjco.log
 
-# 연결 상태 확인
-curl -X GET "http://localhost:8080/api/sap/health" | jq .
+# 애플리케이션 상태 확인 (Actuator 사용 시)
+curl -X GET "http://localhost:8080/api/health" | jq .
 ```
 
 ### 성능 최적화
@@ -385,7 +421,6 @@ curl -X GET "http://localhost:8080/api/sap/health" | jq .
      jco:
        timeout:
          connection: 30000
-         receive: 60000
    ```
 
 ## 📚 지원하는 함수 타입

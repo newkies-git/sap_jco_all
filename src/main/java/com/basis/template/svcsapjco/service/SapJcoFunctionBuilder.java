@@ -1,6 +1,7 @@
 package com.basis.template.svcsapjco.service;
 
 import com.basis.template.svcsapjco.dto.SapParameterMap;
+import com.basis.template.svcsapjco.exception.SapParameterException;
 import com.sap.conn.jco.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,7 +87,8 @@ public class SapJcoFunctionBuilder {
                 try {
                     paramList.setValue(paramName, paramValue);
                 } catch (Exception e) {
-                    log.warn("파라미터 설정 실패: {} = {} - {}", paramName, paramValue, e.getMessage());
+                    throw new SapParameterException(paramName, paramValue,
+                            "파라미터 설정 실패: " + paramName + " - " + e.getMessage(), e);
                 }
             }
         }

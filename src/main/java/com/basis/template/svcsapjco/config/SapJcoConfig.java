@@ -5,20 +5,21 @@ import com.basis.template.svcsapjco.constant.SapConstants;
 import com.sap.conn.jco.JCoDestination;
 import com.sap.conn.jco.JCoDestinationManager;
 import com.sap.conn.jco.JCoException;
-import com.sap.conn.jco.ext.DestinationDataEventListener;
 import com.sap.conn.jco.ext.DestinationDataProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.util.Properties;
 
 /**
- * SAP JCo 설정 클래스
+ * SAP JCo 설정 클래스 (test 프로필에서는 로드되지 않음)
  */
 @Slf4j
 @Configuration
+@Profile("!test")
 public class SapJcoConfig {
 
     @Value("${sap.jco.ashost}")
@@ -70,20 +71,11 @@ public class SapJcoConfig {
      */
     private void setupDestinationDataProvider() {
         try {
-            // 커스텀 provider 생성
-            CustomDestinationDataProvider provider = new CustomDestinationDataProvider();
-
-            // 연결 속성 생성
+            SapDestinationDataProvider provider = new SapDestinationDataProvider();
             Properties connectProperties = createConnectionProperties();
-
-            // Destination 등록
             provider.addDestinationProperties(SapConstants.DESTINATION_NAME, connectProperties);
-
-            // Provider 등록
             com.sap.conn.jco.ext.Environment.registerDestinationDataProvider(provider);
-
             log.debug("SAP DestinationDataProvider 등록 완료: {}", SapConstants.DESTINATION_NAME);
-
         } catch (Exception e) {
             log.error("SAP DestinationDataProvider 설정 실패: {}", e.getMessage(), e);
             throw new RuntimeException("SAP DestinationDataProvider 설정 실패", e);
@@ -123,38 +115,6 @@ public class SapJcoConfig {
         } catch (JCoException e) {
             log.error("SAP Destination 생성 실패: {} - {}", SapConstants.DESTINATION_NAME, e.getMessage(), e);
             throw new RuntimeException("SAP Destination 생성 실패", e);
-        }
-    }
-
-    /**
-     * 커스텀 DestinationDataProvider 클래스
-     */
-    private static class CustomDestinationDataProvider implements DestinationDataProvider {
-
-        private final Properties destinationProperties = new Properties();
-
-        @Override
-        public Properties getDestinationProperties(String destinationName) {
-            if (destinationName.equals(SapConstants.DESTINATION_NAME)) {
-                return destinationProperties;
-            }
-            return null;
-        }
-
-        @Override
-        public void setDestinationDataEventListener(DestinationDataEventListener eventListener) {
-            // 이벤트 리스너 설정 (필요시 구현)
-        }
-
-        @Override
-        public boolean supportsEvents() {
-            return false;
-        }
-
-        public void addDestinationProperties(String destinationName, Properties properties) {
-            if (destinationName.equals(SapConstants.DESTINATION_NAME)) {
-                destinationProperties.putAll(properties);
-            }
         }
     }
 }

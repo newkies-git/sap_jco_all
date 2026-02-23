@@ -3,6 +3,10 @@ spring:
     name: SVC-SAPJCO-ALL
   main:
     allow-bean-definition-overriding: true
+  # Virtual threads (Java 21): 요청당 가상 스레드 사용. SAP JCo 호환성 확인 후 활성화 권장.
+  threads:
+    virtual:
+      enabled: ${SPRING_THREADS_VIRTUAL_ENABLED:false}
 
 # 로깅 설정
 logging:
@@ -33,3 +37,7 @@ sap:
     # 트레이스 설정
     trace:
       enabled: ${SAP_TRACE_ENABLED:true}
+
+    # 응답 빌더: 테이블 파라미터 변환 시 병렬 처리 사용 여부 (대량 테이블 시 유리)
+    response:
+      parallel-table-conversion: ${SAP_PARALLEL_TABLE_CONVERSION:false}

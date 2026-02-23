@@ -13,6 +13,8 @@ public final class ErrorCodeConstants {
     public static final String SAP_CONNECTION_ERROR = "SAP_CONNECTION_ERROR";
     public static final String SAP_FUNCTION_EXECUTION_ERROR = "SAP_FUNCTION_EXECUTION_ERROR";
     public static final String SAP_FUNCTION_DISCOVERY_ERROR = "SAP_FUNCTION_DISCOVERY_ERROR";
+    public static final String SAP_RESULT_EXTRACTION_ERROR = "SAP_RESULT_EXTRACTION_ERROR";
+    public static final String SAP_PARAMETER_ERROR = "SAP_PARAMETER_ERROR";
 
     // 검증 관련 에러 코드
     public static final String VALIDATION_ERROR = "VALIDATION_ERROR";

@@ -23,9 +23,29 @@ public class GlobalExceptionHandler {
     /**
      * SAP JCo 관련 예외 처리
      */
+    /**
+     * SAP 결과 추출 예외 처리
+     */
+    @ExceptionHandler(SapResultExtractionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSapResultExtractionException(SapResultExtractionException e) {
+        StructuredLogger.logException(e.getErrorCode(), e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("SAP 결과 추출 실패: " + e.getMessage()));
+    }
+
+    /**
+     * SAP 파라미터 설정 예외 처리
+     */
+    @ExceptionHandler(SapParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSapParameterException(SapParameterException e) {
+        StructuredLogger.logException(e.getErrorCode(), e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("SAP 파라미터 설정 실패: " + e.getMessage()));
+    }
+
     @ExceptionHandler(SapJcoException.class)
     public ResponseEntity<ApiResponse<Void>> handleSapJcoException(SapJcoException e) {
-        StructuredLogger.logException(ErrorCodeConstants.SAP_FUNCTION_EXECUTION_ERROR, e.getMessage(), e);
+        StructuredLogger.logException(e.getErrorCode(), e.getMessage(), e);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error("SAP 함수 호출 실패: " + e.getMessage()));
     }
@@ -57,7 +77,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleSapFunctionDiscoveryException(SapFunctionDiscoveryException e) {
         StructuredLogger.logException(ErrorCodeConstants.SAP_FUNCTION_DISCOVERY_ERROR, e.getMessage(), e);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("SAP 함수 호출 실패: " + e.getMessage()));
+                .body(ApiResponse.error("SAP 함수 검색/인터페이스 조회 실패: " + e.getMessage()));
     }
 
     /**
