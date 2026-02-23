@@ -1,0 +1,122 @@
+### SAP JCo API 테스트 (유형별 샘플)
+### 실행: 각 요청 위 ▶ Run 버튼 또는 요청 라인에서 Send Request
+###
+### SAP 함수 실행(execute) 호출은 RFC 처리 시간 때문에 수십 초~수 분 걸릴 수 있습니다.
+### "바로 오류"가 나면 클라이언트 타임아웃입니다. 아래 중 하나로 타임아웃을 늘리세요.
+### - IntelliJ/Cursor: Settings → Tools → HTTP Client → Request timeout (예: 120000 ms)
+### - .http 요청 직전에 주석으로: # @timeout 120000 (지원되는 경우)
+
+@baseUrl = http://localhost:8080
+
+###############################################################################
+# 1. 함수 실행 - 전체 요청 (POST /api/sap/execute, body: functionName + importParams + tables)
+###############################################################################
+POST {{baseUrl}}/api/sap/execute
+Content-Type: application/json
+
+{
+  "functionName": "BAPI_USER_GET_DETAIL",
+  "importParams": {
+    "USERNAME": "HANRFC01"
+  },
+  "tables": {}
+}
+
+###############################################################################
+# 1. 함수 실행 - 전체 요청 - 재무 잔액 조회 (ZFI_BALANCE_LIST)
+###############################################################################
+POST {{baseUrl}}/api/sap/execute
+Content-Type: application/json
+
+{
+    "functionName": "ZFI_BALANCE_LIST",
+    "importParams": {
+      "COMPANYCODE": "HS01",
+      "CUSTOMER": "103090",
+      "KEYDATE": "20250825"
+    }
+}
+
+###############################################################################
+# 1. 함수 실행 - 전체 요청 - Z_PP_TRANSPORT_PLANNEDORDER (응답 지연 가능 → 타임아웃 2분)
+###############################################################################
+# @timeout 120000
+POST {{baseUrl}}/api/sap/execute
+Content-Type: application/json
+
+{
+    "functionName": "Z_PP_TRANSPORT_PLANNEDORDER",
+    "importParams": {
+      "FROMDATE": "20260202",
+      "TODATE": "20260202",
+      "ORDERTYPE": "PP01"
+    }
+}
+
+###############################################################################
+# 2. 함수 실행 - Import 파라미터만 (POST /api/sap/execute/{functionName}, body: import 맵만)
+###############################################################################
+# @timeout 120000
+POST {{baseUrl}}/api/sap/execute/Z_PP_TRANSPORT_PLANNEDORDER
+Content-Type: application/json
+
+{
+      "FROMDATE": "20260202",
+      "TODATE": "20260202",
+      "ORDERTYPE": "PP01"
+}
+
+###############################################################################
+# 2. 함수 실행 - Import 파라미터만 - 사용자 상세 (BAPI_USER_GET_DETAIL)
+###############################################################################
+POST {{baseUrl}}/api/sap/execute/BAPI_USER_GET_DETAIL
+Content-Type: application/json
+
+{
+  "USERNAME": "KIMYT"
+}
+
+###############################################################################
+# 3. 함수 실행 - 파라미터 없음 (GET /api/sap/execute/{functionName})
+###############################################################################
+GET {{baseUrl}}/api/sap/execute/BAPI_USER_GET_DETAIL
+
+###############################################################################
+# 3. 함수 실행 - 파라미터 없음 - GL 목록 (Z_FI_GL_LIST)
+###############################################################################
+GET {{baseUrl}}/api/sap/execute/Z_FI_GL_LIST
+
+###############################################################################
+# 1. 함수 실행 - 전체 요청 - GL 목록 (Z_FI_GL_LIST, 파라미터 없이)
+###############################################################################
+POST {{baseUrl}}/api/sap/execute
+Content-Type: application/json
+
+{
+    "functionName": "Z_FI_GL_LIST"
+}
+
+###############################################################################
+# 4. 함수 검색 - 패턴 검색 (GET /search, pattern 필수 2자 이상)
+###############################################################################
+GET {{baseUrl}}/api/sap/functions/search?pattern=Z_BAPI_*&language=KO
+
+###############################################################################
+# 4. 함수 검색 - Z2CO 패턴
+###############################################################################
+GET {{baseUrl}}/api/sap/functions/search?pattern=Z2CO*&language=KO
+
+###############################################################################
+# 4. 함수 검색 - Z*LIST* 패턴
+###############################################################################
+GET {{baseUrl}}/api/sap/functions/search?pattern=Z*LIST*&language=KO
+
+###############################################################################
+# 5. 함수 인터페이스 조회 (GET /api/sap/functions/{functionName}/interface)
+###############################################################################
+GET {{baseUrl}}/api/sap/functions/Z_BAPI_PRODORDCONF_CREATE_TT/interface
+
+###############################################################################
+# 5. 함수 인터페이스 조회 - Z2MM_STOCK_REQUIREMENTS_LIST
+###############################################################################
+GET {{baseUrl}}/api/sap/functions/Z2MM_STOCK_REQUIREMENTS_LIST/interface

@@ -87,107 +87,6 @@ src/main/java/com/basis/template/svcsapjco/
 - **Virtual threads**: `spring.threads.virtual.enabled`로 가상 스레드 사용 가능 (SAP JCo 호환성 확인 후 활성화 권장)
 - **예외**: 함수 검색/인터페이스 조회 실패 메시지 구체화, `GlobalExceptionHandler`에서 `getErrorCode()` 활용
 
-## 🔌 API 엔드포인트
-
-### 1. 함수 실행 API
-
-#### 기본 함수 실행
-```http
-POST /api/sap/execute
-Content-Type: application/json
-
-{
-  "functionName": "BAPI_USER_GET_DETAIL",
-  "importParams": {
-    "USERNAME": "HANRFC01"
-  },
-  "tables": {}
-}
-```
-
-#### Import 파라미터만으로 실행
-```http
-POST /api/sap/execute/{functionName}
-Content-Type: application/json
-
-{
-  "USERNAME": "HANRFC01"
-}
-```
-
-#### 파라미터 없이 실행
-```http
-GET /api/sap/execute/{functionName}
-```
-
-### 2. 함수 검색 및 조회 API
-
-#### 패턴으로 함수 검색
-```http
-GET /api/sap/functions/search?pattern=BAPI_*&groupName=SPACE&language=KO
-```
-
-**응답 예시:**
-```json
-{
-  "success": true,
-  "data": {
-    "pattern": "BAPI_*",
-    "groupName": "SPACE",
-    "language": "KO",
-    "functions": [
-      {
-        "functionName": "BAPI_USER_GET_DETAIL",
-        "groupName": "SPACE",
-        "application": "SAP",
-        "host": "SAP",
-        "description": "사용자 상세 정보 조회"
-      }
-    ],
-    "count": 1,
-    "timestamp": 1756187575938
-  }
-}
-```
-
-#### 함수 인터페이스 조회
-```http
-GET /api/sap/functions/{functionName}/interface
-```
-
-**응답 예시:**
-```json
-{
-  "success": true,
-  "data": {
-    "functionName": "BAPI_USER_GET_DETAIL",
-    "interface": {
-      "functionName": "BAPI_USER_GET_DETAIL",
-      "importParameters": {
-        "fieldCount": 2,
-        "hasFields": true,
-        "fieldNames": ["CACHE_RESULTS", "USERNAME"]
-      },
-      "exportParameters": {
-        "fieldCount": 13,
-        "hasFields": true,
-        "fieldNames": ["ADDRESS", "ADMINDATA", "ALIAS", ...]
-      },
-      "tableParameters": {
-        "fieldCount": 23,
-        "hasFields": true,
-        "fieldNames": ["ACTIVITYGROUPS", "ADDCOMREM", ...]
-      },
-      "changingParameters": {
-        "fieldCount": 0,
-        "hasFields": false,
-        "fieldNames": []
-      }
-    }
-  }
-}
-```
-
 ## ⚙️ 설정
 
 ### 환경 변수
@@ -238,6 +137,7 @@ sap:
 
 ## 📝 사용 예시
 
+sap_rfc_test.http 참고
 ### 1. 함수 검색
 
 ```bash
@@ -404,6 +304,15 @@ tail -f logs/sapjco.log
 curl -X GET "http://localhost:8080/api/health" | jq .
 ```
 
+### 성능 모니터링 및 경고
+
+- **성능 경고 로그**: SAP 함수 실행 시간이 **1초(1000ms)를 초과**하면 다음 WARN 로그가 출력됩니다.
+  ```
+  [PERFORMANCE] 성능 경고 - <함수명> (<실행시간>ms)
+  ```
+  느린 RFC 호출을 찾거나, SAP/DB 쪽 튜닝·데이터 양 검토 시 참고하세요. 기준값(1000ms)은 `StructuredLogger.logSapFunctionComplete` 내부에 하드코딩되어 있습니다.
+- **API/요청 단위 로그**: `[API] API 요청 시작`, `[API] API 응답 완료 (Nms)` 로그로 요청별 소요 시간을 확인할 수 있습니다.
+
 ### 성능 최적화
 
 1. **연결 풀 설정 조정**
@@ -416,11 +325,21 @@ curl -X GET "http://localhost:8080/api/health" | jq .
    ```
 
 2. **타임아웃 설정 조정**
+   - `sap.jco.timeout.connection`: SAP 로그인/연결 시도 타임아웃(ms). 기본 60000(60초).
    ```yaml
    sap:
      jco:
        timeout:
-         connection: 30000
+         connection: 60000  # 또는 환경 변수 SAP_CONNECTION_TIMEOUT
+   ```
+
+3. **테이블 파라미터 병렬 변환** (대량 테이블 응답 시)
+   - 응답의 테이블 파라미터를 Java 맵으로 변환할 때 병렬 스트림 사용 여부.
+   ```yaml
+   sap:
+     jco:
+       response:
+         parallel-table-conversion: true  # 기본 false, 대량 테이블 시 true 권장
    ```
 
 ## 📚 지원하는 함수 타입

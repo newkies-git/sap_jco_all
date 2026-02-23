@@ -1,5 +1,7 @@
 package com.basis.template.svcsapjco.dto;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -8,12 +10,23 @@ import java.util.Map;
 
 /**
  * 타입 안전한 SAP 파라미터 맵 제네릭을 활용하여 타입 안전성을 보장
+ * JSON 직렬화 시 flat 형태({ "KEY": "value", ... })로 읽고 씁니다.
  */
 @Data
 @NoArgsConstructor
 public class SapParameterMap {
 
     private final Map<String, Object> parameters = new HashMap<>();
+
+    @JsonAnyGetter
+    public Map<String, Object> getParameters() {
+        return parameters;
+    }
+
+    @JsonAnySetter
+    public void setParameter(String key, Object value) {
+        parameters.put(key, value);
+    }
 
     /**
      * 파라미터 추가

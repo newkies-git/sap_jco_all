@@ -62,10 +62,10 @@ public class GlobalExceptionHandler {
 
     /**
      * SAP 함수 실행 예외 처리
+     * (실제 오류 로그는 SapJcoFunctionExecutor.logSapFunctionError에서 이미 출력하므로 여기서는 중복 로그 생략)
      */
     @ExceptionHandler(SapFunctionExecutionException.class)
     public ResponseEntity<ApiResponse<Void>> handleSapFunctionExecutionException(SapFunctionExecutionException e) {
-        StructuredLogger.logException(ErrorCodeConstants.SAP_FUNCTION_EXECUTION_ERROR, e.getMessage(), e);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error("SAP 함수 실행 실패: " + e.getMessage()));
     }
