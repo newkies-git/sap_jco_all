@@ -124,6 +124,14 @@ temp/
 *.so
 *.dylib
 *.jnilib
+# libs/ 폴더는 빌드에 필요하므로 예외
+!libs/
+!libs/*.jar
+!libs/*.dylib
+!libs/*.so
+!libs/*.dll
+!libs/*.jnilib
+!libs/*.mf
 
 # SAP 연결 설정 파일 (보안상 민감한 정보 포함)
 sapjco.properties
