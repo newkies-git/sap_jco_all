@@ -50,20 +50,4 @@ public class SapFunctionRequest {
         request.tables = SapParameterMap.of();
         return request;
     }
-
-    /**
-     * Import 파라미터 추가
-     */
-    public SapFunctionRequest addImportParam(String key, Object value) {
-        this.importParams.add(key, value);
-        return this;
-    }
-
-    /**
-     * Table 파라미터 추가
-     */
-    public SapFunctionRequest addTable(String key, Object value) {
-        this.tables.add(key, value);
-        return this;
-    }
 }
